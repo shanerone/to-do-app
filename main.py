@@ -1,10 +1,15 @@
 from uuid import uuid4
 
+from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
 from fastapi import FastAPI
 
 app = FastAPI()
+
+app.add_middleware(
+    CORSMiddleware, allow_origins=["http://localhost:3000"], allow_methods=["*"]
+)
 
 
 class STasks(BaseModel):
