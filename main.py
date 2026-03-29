@@ -22,6 +22,11 @@ class STaskAdd(BaseModel):
     title: str
 
 
+class STaskUpdate(BaseModel):
+    title: str | None = None
+    completed: bool | None = None
+
+
 tasks: list[STasks] = []
 
 
@@ -36,3 +41,22 @@ async def add_task(payload: STaskAdd) -> STasks:
 
     tasks.append(task)
     return task
+
+
+@app.patch("/tasks/{task_id}")
+async def update_task(task_id: str, payload: STaskUpdate):
+    for task in tasks:
+        if task.id == task_id:
+            task.title = payload.title if payload.title else task.title
+            task.completed = (
+                payload.completed if payload.completed is not None else task.completed
+            )
+
+            return task
+
+
+@app.delete("/tasks/{task_id}")
+async def delete_task(task_id: str):
+    for task in tasks:
+        if task.id == task_id:
+            tasks.remove(task)
