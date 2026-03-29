@@ -74,6 +74,7 @@ API — основные эндпоинты
 []
 ```
 <img src="data/Get.png" alt="GET пустой список" width="800" />
+
 ### 2) Создать задачу (`POST /tasks`)
 
 Тело запроса:
@@ -96,6 +97,7 @@ API — основные эндпоинты
 }
 ```
 <img src="data/post.png" alt="GET пустой список" width="800" />
+
 ### 3) Обновить задачу (`PATCH /tasks/{id}`)
 
 `id` в path-параметре: строковый UUID.
@@ -139,6 +141,7 @@ API — основные эндпоинты
 }
 ```
 <img src="data/patch.png" alt="GET пустой список" width="800" />
+
 ### 4) Удалить задачу (`DELETE /tasks/{id}`)
 
 `id` в path-параметре: строковый UUID.
@@ -149,7 +152,7 @@ API — основные эндпоинты
 - Статус: `204 No Content`
 - Тело ответа: **отсутствует**
 
-<img src="data/get.png" alt="GET пустой список" width="800" />
+<img src="data/delete.png" alt="GET пустой список" width="800" />
 
 Документация API (Swagger)
 --------------------------
