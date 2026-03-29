@@ -1,63 +1,75 @@
-from uuid import uuid4
+from contextlib import asynccontextmanager
+from typing import List
 
+from db.database import create_tables, get_db
 from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel
+from models.task import TaskORM
+from schemas.task import STaskAdd, STasks, STaskUpdate
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
 
-from fastapi import FastAPI, status
+from fastapi import Depends, FastAPI, HTTPException, status
 
 
-app = FastAPI()
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    await create_tables()
+    print("DB ready")
+    yield
+    print("Off")
+
+
+app = FastAPI(title="To-Do App", lifespan=lifespan)
 
 app.add_middleware(
     CORSMiddleware, allow_origins=["http://localhost:3000"], allow_methods=["*"]
 )
 
 
-class STasks(BaseModel):
-    id: str
-    title: str
-    completed: bool
+def taskorm_to_model(task_orm: TaskORM) -> STasks:
+    return STasks(id=task_orm.id, title=task_orm.title, completed=task_orm.completed)
 
 
-class STaskAdd(BaseModel):
-    title: str
+@app.get("/tasks", response_model=List[STasks])
+async def get_tasks(db: AsyncSession = Depends(get_db)) -> List[STasks]:
+    result = await db.scalars(select(TaskORM))
+    tasks_from_db = result.all()
+    return [taskorm_to_model(task) for task in tasks_from_db]
 
 
-class STaskUpdate(BaseModel):
-    title: str | None = None
-    completed: bool | None = None
+@app.post("/tasks", status_code=status.HTTP_201_CREATED, response_model=STasks)
+async def add_task(payload: STaskAdd, db: AsyncSession = Depends(get_db)) -> STasks:
+    task = TaskORM(title=payload.title, completed=False)
+    db.add(task)
+    await db.commit()
+    await db.refresh(task)
+    return taskorm_to_model(task)
 
 
-tasks: list[STasks] = []
+@app.patch("/tasks/{task_id}", response_model=STasks)
+async def update_task(
+    task_id: str, payload: STaskUpdate, db: AsyncSession = Depends(get_db)
+) -> STasks:
+    task = await db.get(TaskORM, task_id)
+    if not task:
+        raise HTTPException(status_code=404, detail="Task not found")
 
+    if payload.title is not None:
+        task.title = payload.title
+    if payload.completed is not None:
+        task.completed = payload.completed
 
-@app.get("/tasks")
-async def get_tasks() -> list[STasks]:
-    return tasks
+    await db.commit()
+    await db.refresh(task)
 
-
-@app.post("/tasks", status_code=status.HTTP_201_CREATED)
-async def add_task(payload: STaskAdd) -> STasks:
-    task = STasks(id=str(uuid4()), title=payload.title, completed=False)
-
-    tasks.append(task)
-    return task
-
-
-@app.patch("/tasks/{task_id}")
-async def update_task(task_id: str, payload: STaskUpdate):
-    for task in tasks:
-        if task.id == task_id:
-            task.title = payload.title if payload.title else task.title
-            task.completed = (
-                payload.completed if payload.completed is not None else task.completed
-            )
-
-            return task
+    return taskorm_to_model(task)
 
 
 @app.delete("/tasks/{task_id}", status_code=status.HTTP_204_NO_CONTENT)
-async def delete_task(task_id: str):
-    for task in tasks:
-        if task.id == task_id:
-            tasks.remove(task)
+async def delete_task(task_id: str, db: AsyncSession = Depends(get_db)):
+    task = await db.get(TaskORM, task_id)
+    if not task:
+        raise HTTPException(status_code=404, detail="Task not found")
+    await db.delete(task)
+    await db.commit()
+    return None

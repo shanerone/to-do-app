@@ -1,2 +1,4 @@
-.DS-store
-__pychahe__
+.env
+.venv/
+__pycache__/
+*.pyc
