@@ -73,9 +73,7 @@ API — основные эндпоинты
 ```json
 []
 ```
-
-<img src="data/get.png" alt="GET пустой список" width="800" />
-
+<img src="data/Get.png" alt="GET пустой список" width="800" />
 ### 2) Создать задачу (`POST /tasks`)
 
 Тело запроса:
