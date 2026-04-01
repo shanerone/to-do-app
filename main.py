@@ -15,7 +15,7 @@ from fastapi import Depends, FastAPI, HTTPException, status
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # await delete_tables()
+    await delete_tables()
     await create_tables()
     print("DB ready")
     yield
