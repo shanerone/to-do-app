@@ -17,18 +17,16 @@ class TaskRepository:
         return await self.db.get(TaskORM, id)
 
     async def add(self, task: TaskORM) -> TaskORM:
-        # add and persist the task, then refresh to get generated fields (id)
         self.db.add(task)
         await self.db.commit()
         await self.db.refresh(task)
         return task
 
     async def update(self, task: TaskORM) -> TaskORM:
-        # assume task is already attached and mutated
         await self.db.commit()
         await self.db.refresh(task)
         return task
 
     async def delete(self, task: TaskORM) -> None:
-        self.db.delete(task)
+        await self.db.delete(task)
         await self.db.commit()

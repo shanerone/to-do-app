@@ -1,12 +1,10 @@
 from contextlib import asynccontextmanager
 from typing import List
 
-from starlette.status import HTTP_201_CREATED
-
-from db.database import create_tables, get_db
+from db.database import create_tables, get_db, delete_tables
 from fastapi.middleware.cors import CORSMiddleware
-from models.task import TaskORM
 from models.categories import CategoriesORM
+from models.task import TaskORM
 from schemas.categories import SCategory, SCategoryAdd, SCategoryUpdate
 from schemas.task import STaskAdd, STasks, STaskUpdate
 from sqlalchemy import select
@@ -17,6 +15,7 @@ from fastapi import Depends, FastAPI, HTTPException, status
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    # await delete_tables()
     await create_tables()
     print("DB ready")
     yield
@@ -33,8 +32,10 @@ app.add_middleware(
 def taskorm_to_model(task_orm: TaskORM) -> STasks:
     return STasks(id=task_orm.id, title=task_orm.title, completed=task_orm.completed)
 
+
 def categoryorm_to_model(category_orm: CategoriesORM) -> SCategory:
     return SCategory(id=category_orm.id, title=category_orm.title)
+
 
 @app.get("/tasks", response_model=List[STasks])
 async def get_tasks(db: AsyncSession = Depends(get_db)) -> List[STasks]:
@@ -85,9 +86,18 @@ async def delete_task(task_id: str, db: AsyncSession = Depends(get_db)):
 async def ger_categories(db: AsyncSession = Depends(get_db)) -> List[SCategory]:
     res = await db.scalars(select(CategoriesORM))
     category_from_bd = res.all()
-    return [categoryorm_to_model(category) for category in category_from_bd ]
+    return [categoryorm_to_model(category) for category in category_from_bd]
 
 
-@app.post("/categories", status_code=status.HTTP_201_CREATED)
-async def add_category(db: AsyncSession = Depends(get_db)) -> SCategory:
-    ...
+@app.post("/categories", status_code=status.HTTP_201_CREATED, response_model=SCategory)
+async def add_category(
+    payload: SCategoryAdd, db: AsyncSession = Depends(get_db)
+) -> SCategory:
+    category = CategoriesORM(title=payload.title)
+    db.add(category)
+    await db.commit()
+    await db.refresh(category)
+
+    return categoryorm_to_model(category)
+    
+
