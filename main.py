@@ -1,10 +1,11 @@
 from contextlib import asynccontextmanager
 from typing import List
 
-from db.database import create_tables, get_db, delete_tables
+from db.database import create_tables, delete_tables, get_db
 from fastapi.middleware.cors import CORSMiddleware
 from models.categories import CategoriesORM
 from models.task import TaskORM
+from routers.auth import router as auth_router
 from schemas.categories import SCategory, SCategoryAdd, SCategoryUpdate
 from schemas.task import STaskAdd, STasks, STaskUpdate
 from sqlalchemy import select
@@ -12,10 +13,13 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from fastapi import Depends, FastAPI, HTTPException, status
 
+from auth.dependencies import get_current_user
+from models.user import UserORM
+
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    await delete_tables()
+    # await delete_tables()
     await create_tables()
     print("DB ready")
     yield
@@ -25,9 +29,10 @@ async def lifespan(app: FastAPI):
 app = FastAPI(title="To-Do App", lifespan=lifespan)
 
 app.add_middleware(
-    CORSMiddleware, allow_origins=["http://localhost:3000"], allow_methods=["*"]
+    CORSMiddleware, allow_origins=["http://localhost:3000"], allow_methods=["*"], allow_headers=["*"]
 )
 
+app.include_router(auth_router)
 
 def taskorm_to_model(task_orm: TaskORM) -> STasks:
     return STasks(id=task_orm.id, title=task_orm.title, completed=task_orm.completed)
@@ -38,7 +43,7 @@ def categoryorm_to_model(category_orm: CategoriesORM) -> SCategory:
 
 
 @app.get("/tasks", response_model=List[STasks])
-async def get_tasks(db: AsyncSession = Depends(get_db)) -> List[STasks]:
+async def get_tasks(db: AsyncSession = Depends(get_db), current_user: UserORM = Depends(get_current_user)) -> List[STasks]:
     result = await db.scalars(select(TaskORM))
     tasks_from_db = result.all()
     return [taskorm_to_model(task) for task in tasks_from_db]
@@ -99,5 +104,3 @@ async def add_category(
     await db.refresh(category)
 
     return categoryorm_to_model(category)
-    
-
