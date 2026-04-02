@@ -14,7 +14,7 @@ router = APIRouter(prefix="/tasks", tags=["tasks"])
 
 
 def taskorm_to_model(task_orm: TaskORM) -> STasks:
-    return STasks(id=task_orm.id, title=task_orm.title, completed=task_orm.completed)
+    return STasks(id=task_orm.id, title=task_orm.title, completed=task_orm.completed, category_id=task_orm.category_id)
 
 
 @router.get("", response_model=List[STasks])
@@ -29,7 +29,7 @@ async def get_tasks(
 
 @router.post("", status_code=status.HTTP_201_CREATED, response_model=STasks)
 async def add_task(payload: STaskAdd, db: AsyncSession = Depends(get_db)) -> STasks:
-    task = TaskORM(title=payload.title, completed=False)
+    task = TaskORM(title=payload.title, completed=False, category_id=payload.category_id)
     db.add(task)
     await db.commit()
     await db.refresh(task)
@@ -48,6 +48,8 @@ async def update_task(
         task.title = payload.title
     if payload.completed is not None:
         task.completed = payload.completed
+    if payload.category_id is not None:
+        task.category_id = payload.category_id
 
     await db.commit()
     await db.refresh(task)
