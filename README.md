@@ -221,6 +221,17 @@ uvicorn main:app --reload
 - Статус: `204 No Content`
 
 ---
+<h2 align="center">🏞️ Screenshot</h2>
+
+<img src="data/registr.png" alt="Вход и регистрация">
+
+<br/>
+
+<img src="data/zadachki.png" alt="Как выглядят задачи">
+
+<br/>
+
+<img src="data/category.png" alt="Как выглядят категории">
 
 ## Документация API (Swagger)
 После запуска сервера открой:
