@@ -17,7 +17,7 @@ def taskorm_to_model(task_orm: TaskORM) -> STasks:
     return STasks(id=task_orm.id, title=task_orm.title, completed=task_orm.completed)
 
 
-@router.get("/", response_model=List[STasks])
+@router.get("", response_model=List[STasks])
 async def get_tasks(
     db: AsyncSession = Depends(get_db),
     current_user: UserORM = Depends(get_current_user),
@@ -27,7 +27,7 @@ async def get_tasks(
     return [taskorm_to_model(task) for task in tasks_from_db]
 
 
-@router.post("/", status_code=status.HTTP_201_CREATED, response_model=STasks)
+@router.post("", status_code=status.HTTP_201_CREATED, response_model=STasks)
 async def add_task(payload: STaskAdd, db: AsyncSession = Depends(get_db)) -> STasks:
     task = TaskORM(title=payload.title, completed=False)
     db.add(task)
